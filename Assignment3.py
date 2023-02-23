@@ -8,7 +8,17 @@ class Window:
     deformations = {'Create Rectangle': Tool.Rectangle,
                     'Translate': Tool.Translate, 'Rigid': Tool.Rigid, 'Similarity': Tool.Similarity,
                     'Affine': Tool.Affine, 'Projective': Tool.Projective}
+
+    # initialize tkinter root
+    root = tkinter.Tk()
+    canvas = Canvas(root, bg="white", height=500, width=500)  # canvas info
+    cmb_deformation, cmb_outline, cmb_fill = None, None, None
+    curTool = Tool.Rectangle
     selectedDeformation = deformations['Create Rectangle']
+    selectedFill = 'Black'
+    selectedOutline = 'Black'
+    shapes = {}
+    numShapes = 0
 
     def __init__(self):
         self.setup_canvas_window()
@@ -20,17 +30,24 @@ class Window:
 
     def callback_cmb_deformation(self, eventObject):
         self.selectedDeformation = self.deformations[eventObject.widget.get()]
-        print(eventObject.widget.get())
 
-    # initialize tkinter root
-    root = tkinter.Tk()
-    window = Canvas(root, bg="white", height=500, width=500)  # canvas info
-    cmb_deformation, cmb_outline, cmb_fill = None, None, None
-    curTool = Tool.Rectangle
+    def callback_cmb_outline(self, eventObject):
+        self.selectedOutline = eventObject.widget.get()
+        print(self.selectedOutline)
 
-    def onClick(self):
-        self.selectedDeformation.onClick()
+    def callback_cmb_fill(self, eventObject):
+        self.selectedFill = eventObject.widget.get()
+        print(self.selectedFill)
 
+    def onClick(self, eventObject):
+        self.selectedDeformation.onClick(self, eventObject)
+        print(eventObject.widget)
+
+    def onDrag(self, eventObject):
+        self.selectedDeformation.onDrag(self, eventObject)
+
+    def onRelease(self, eventObject):
+        self.selectedDeformation.onRelease(self, eventObject)
 
     def setup_canvas_window(self):
         # create main menu bar for window
@@ -65,6 +82,7 @@ class Window:
         lbl_outline.pack(side=LEFT, padx=2, pady=0)  # pack the label
         cmb_outline.pack(side=LEFT, padx=2, pady=0)  # pack the combobox
         cmb_outline.current(0)
+        cmb_outline.bind("<<ComboboxSelected>>", self.callback_cmb_outline)
 
         # create fill combobox and set up the options
         lbl_fill = Label(toolBar, text="Fill: ")  # create label
@@ -73,13 +91,16 @@ class Window:
         lbl_fill.pack(side=LEFT, padx=2, pady=0)  # pack the label
         cmb_fill.pack(side=LEFT, padx=2, pady=0)  # pack the combobox
         cmb_fill.current(0)
+        cmb_fill.bind("<<ComboboxSelected>>", self.callback_cmb_fill)
 
         toolBar.pack()  # pack the toolbox
-        self.window.pack()  # pack the window
+        self.canvas.pack()  # pack the window
 
     def create_bindings(self):
         # lambda needed or else we get a positional argument error
-        self.window.bind("<Button-1>", lambda e: self.onClick())
+        self.canvas.bind("<Button-1>", self.onClick)
+        self.canvas.bind("<ButtonRelease-1>", self.onRelease)
+        self.canvas.bind("<B1-Motion>", self.onDrag)
 
 
 w = Window()
