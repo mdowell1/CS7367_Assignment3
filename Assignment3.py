@@ -2,11 +2,15 @@ import tkinter
 from tkinter import *
 from tkinter.ttk import Combobox, Label
 import Tool
+import pickle
+
+
+def save_window(window):
+    print('save')
 
 
 class Window:
-    deformations = {'Create Rectangle': Tool.Rectangle,
-                    'Translate': Tool.Translate, 'Rigid': Tool.Rigid, 'Similarity': Tool.Similarity,
+    deformations = {'Translate': Tool.Translate, 'Rigid': Tool.Rigid, 'Similarity': Tool.Similarity,
                     'Affine': Tool.Affine, 'Projective': Tool.Projective}
 
     # initialize tkinter root
@@ -14,11 +18,13 @@ class Window:
     canvas = Canvas(root, bg="white", height=500, width=500)  # canvas info
     cmb_deformation, cmb_outline, cmb_fill = None, None, None
     curTool = Tool.Rectangle
-    selectedDeformation = deformations['Create Rectangle']
+    selectedDeformation = deformations['Translate']  # deformations['Create Rectangle']
     selectedFill = 'Black'
     selectedOutline = 'Black'
     shapes = {}
     numShapes = 0
+    drawing = False
+    cornerClicked = False
 
     def __init__(self):
         self.setup_canvas_window()
@@ -40,14 +46,55 @@ class Window:
         print(self.selectedFill)
 
     def onClick(self, eventObject):
+        self.check_if_corner(eventObject)
         self.selectedDeformation.onClick(self, eventObject)
-        print(eventObject.widget)
 
     def onDrag(self, eventObject):
-        self.selectedDeformation.onDrag(self, eventObject)
+        if self.drawing:
+            Tool.Rectangle.onDrag(self, eventObject)
+        elif not self.cornerClicked:
+            self.selectedDeformation.onDrag(self, eventObject)
 
     def onRelease(self, eventObject):
-        self.selectedDeformation.onRelease(self, eventObject)
+        if self.drawing:
+            self.drawing = False
+            Tool.Rectangle.onRelease(self, eventObject)
+        else:
+            self.cornerClicked = False
+            self.selectedDeformation.onRelease(self, eventObject)
+
+    def onShiftClick(self, eventObject):
+        self.drawing = True
+        Tool.Rectangle.onClick(self, eventObject)
+        print("shift click")
+
+    def check_if_corner(self, eventObject):
+        shape = self.canvas.find_closest(eventObject.x, eventObject.y)
+        if len(shape) == 0:
+            return
+
+        coords = self.canvas.coords(shape[0])
+        dist = 4
+
+        # check if on top left corner
+        if coords[1]-dist <= eventObject.y <= coords[1] + dist and coords[0] - dist <= eventObject.x <= coords[0] + dist:
+            self.cornerClicked = True
+            print("Clicked top left corner")
+
+        # check if bottom left corner
+        if coords[3] - dist <= eventObject.y <= coords[3] + dist and coords[0] - dist <= eventObject.x <= coords[0] + dist:
+            self.cornerClicked = True
+            print("Clicked bottom left corner")
+
+        # check if on top right corner
+        if coords[1] - dist <= eventObject.y <= coords[1] + dist and coords[2] - dist <= eventObject.x <= coords[2] + dist:
+            self.cornerClicked = True
+            print("Clicked top right corner")
+
+        # check if bottom left corner
+        if coords[3] - dist <= eventObject.y <= coords[3] + dist and coords[2] - dist <= eventObject.x <= coords[2] + dist:
+            self.cornerClicked = True
+            print("Clicked bottom right corner")
 
     def setup_canvas_window(self):
         # create main menu bar for window
@@ -101,6 +148,9 @@ class Window:
         self.canvas.bind("<Button-1>", self.onClick)
         self.canvas.bind("<ButtonRelease-1>", self.onRelease)
         self.canvas.bind("<B1-Motion>", self.onDrag)
+        self.canvas.bind("<Shift-1>", self.onShiftClick)
+        self.canvas.bind("<KeyRelease-Shift_L>", self.onShiftClick)
+        self.canvas.bind("<KeyRelease-Shift_R>", self.onShiftClick)
 
 
 w = Window()

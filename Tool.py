@@ -1,7 +1,5 @@
-import math
 from abc import abstractmethod, ABC
-import tkinter
-from tkinter import *
+
 
 class Tool(ABC):
     @staticmethod
@@ -47,40 +45,47 @@ class Rectangle(Tool):
         print("Rectangle onRelease")
 
 
+# translate moves objects up, down, left, and right
 class Translate(Tool):
     @staticmethod
     def onClick(window, eventObject):
-        rect_id = window.canvas.find_closest(eventObject.x, eventObject.y)[0]
-
         print("Translate onClick")
 
     @staticmethod
     def onDrag(window, eventObject):
-        rect_id = window.canvas.find_closest(eventObject.x, eventObject.y)[0]
-        coords = window.shapes[rect_id]  # has x0, y0, width, and height
-        width = coords[2]
-        height = coords[3]
+        rect_id = window.canvas.find_closest(eventObject.x, eventObject.y)
+        if len(rect_id) == 0:
+            return
+        rect_id = rect_id[0]
+        coords = window.canvas.coords(rect_id)  # get recorded shape position
 
-        xPos = eventObject.x - width/2
-        yPos = eventObject.y - height/3
-        window.canvas.coords(rect_id, xPos, yPos, width + xPos, height + yPos)
+        # only continue if user clicked inside the object
+        if coords[0] < eventObject.x < coords[2] and coords[1] < eventObject.y < coords[3]:
+            dimensions = window.shapes[rect_id]  # has x0, y0, width, and height
+            width = dimensions[2]
+            height = dimensions[3]
+
+            xPos = eventObject.x - width/2
+            yPos = eventObject.y - height/3
+            window.canvas.coords(rect_id, xPos, yPos, width + xPos, height + yPos)
 
     @staticmethod
     def onRelease(window, eventObject):
         print("Translate onRelease")
 
 
+# rigid both translates and rotates objects
 class Rigid(Tool):
     @staticmethod
-    def onClick(canvas):
+    def onClick(canvas, eventObject):
         print("Rigid onClick")
 
     @staticmethod
-    def onDrag(canvas):
+    def onDrag(canvas, eventObject):
         print("Rigid onDrag")
 
     @staticmethod
-    def onRelease(canvas):
+    def onRelease(canvas, eventObject):
         print("Rigid onRelease")
 
 
