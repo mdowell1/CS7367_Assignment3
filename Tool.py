@@ -1,4 +1,7 @@
 from abc import abstractmethod, ABC
+import numpy as np
+
+lastPoint = None
 
 
 class Tool(ABC):
@@ -24,54 +27,72 @@ class Rectangle(Tool):
 
     @staticmethod
     def onClick(window, eventObject):
-
-        rect = window.canvas.create_rectangle(eventObject.x, eventObject.y, eventObject.x,
-                                              eventObject.y, fill=window.selectedFill, outline=window.selectedOutline)
-        window.shapes[rect] = (eventObject.x, eventObject.y, 0, 0)
+        rect = window.canvas.create_polygon(eventObject.x, eventObject.y, eventObject.x,
+                                            eventObject.y, fill=window.selectedFill, outline=window.selectedOutline)
+        window.newShapes[rect] = (eventObject.x, eventObject.y, 0, 0)
         window.numShapes += 1
-        print("Rectangle onClick")
 
     @staticmethod
     def onDrag(window, eventObject):
-        coords = window.shapes[window.numShapes]
-        window.canvas.coords(window.numShapes, coords[0], coords[1], eventObject.x, eventObject.y)
-        print("Rectangle onDrag")
+        coords = window.newShapes[window.numShapes]
+        x2 = eventObject.x
+        y2 = coords[1]
+        x3 = coords[0]
+        y3 = eventObject.y
+
+        newCoords = (coords[0], coords[1], x2, y2, eventObject.x, eventObject.y, x3, y3)
+        print(newCoords)
+        window.canvas.coords(window.numShapes, *newCoords)
 
     @staticmethod
     def onRelease(window, eventObject):
         coords = window.canvas.coords(window.numShapes)
-        size = (coords[2] - coords[0], coords[3] - coords[1])
-        window.shapes[window.numShapes] = (coords[0], coords[1], size[0], size[1])
-        print("Rectangle onRelease")
+        if coords[0] > coords[2]:  # if shape was drawn left to right, fix coordinates
+            newRight = coords[0]
+            newLeft = coords[2]
+            coords[0] = newLeft
+            coords[2] = newRight
+            coords[4] = newRight
+            coords[6] = newLeft
+            
+        if coords[1] > coords[5]:  # if shape was drawn down to up, fix coordinates
+            newTop = coords[5]
+            newBottom = coords[1]
+            coords[1] = newTop
+            coords[3] = newTop
+            coords[5] = newBottom
+            coords[7] = newBottom
+
+        size = (coords[2] - coords[0], coords[5] - coords[1])
+        window.newShapes[window.numShapes] = (coords[0], coords[1], size[0], size[1])
+        window.canvas.coords(window.numShapes, *coords)
+        print(window.canvas.type(1))
 
 
 # translate moves objects up, down, left, and right
 class Translate(Tool):
     @staticmethod
     def onClick(window, eventObject):
-        print("Translate onClick")
+        global lastPoint
+        lastPoint = (eventObject.x, eventObject.y)
 
     @staticmethod
     def onDrag(window, eventObject):
-        rect_id = window.canvas.find_closest(eventObject.x, eventObject.y)
-        if len(rect_id) == 0:
+        global lastPoint
+        if lastPoint is None or window.selectedObj is None:
             return
-        rect_id = rect_id[0]
-        coords = window.canvas.coords(rect_id)  # get recorded shape position
 
-        # only continue if user clicked inside the object
-        if coords[0] < eventObject.x < coords[2] and coords[1] < eventObject.y < coords[3]:
-            dimensions = window.shapes[rect_id]  # has x0, y0, width, and height
-            width = dimensions[2]
-            height = dimensions[3]
+        coords = window.canvas.coords(window.selectedObj)  # get recorded shape position
 
-            xPos = eventObject.x - width/2
-            yPos = eventObject.y - height/3
-            window.canvas.coords(rect_id, xPos, yPos, width + xPos, height + yPos)
+        # get new coordinates from the translate method, then update the shape with them
+        newCoords = Transformations.translate(coords, (eventObject.x, eventObject.y))
+        window.canvas.coords(window.selectedObj, *newCoords)
+        lastPoint = (eventObject.x, eventObject.y)  # update last point to be the current point
 
     @staticmethod
     def onRelease(window, eventObject):
-        print("Translate onRelease")
+        global lastPoint
+        lastPoint = None
 
 
 # rigid both translates and rotates objects
@@ -129,3 +150,21 @@ class Projective(Tool):
     @staticmethod
     def onRelease(canvas):
         print("Projective onRelease")
+
+
+class Transformations:
+
+    @staticmethod
+    def translate(coords, newLoc):
+        xDif = lastPoint[0] - newLoc[0]
+        yDif = lastPoint[1] - newLoc[1]
+        newPoints = []
+        for i in range(0, len(coords)):
+            if i % 2 == 0:
+                newPoints.append(coords[i] - xDif)
+            else:
+                newPoints.append(coords[i] - yDif)
+        return newPoints
+
+
+identityMatrix = [[1, 0], [0, 1]]
