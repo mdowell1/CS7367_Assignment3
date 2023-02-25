@@ -24,13 +24,12 @@ def create_json(window, filename):
 
 
 class Window:
+    # region initialize variables
     deformations = {'Translate': Tool.Translate, 'Rigid': Tool.Rigid, 'Similarity': Tool.Similarity,
                     'Affine': Tool.Affine, 'Projective': Tool.Projective}
-
     global canvas_size
 
-    # initialize tkinter root
-    root = tkinter.Tk()
+    root = tkinter.Tk()  # initialize tkinter root
     canvas = Canvas(root, bg="white", height=canvas_size[1], width=canvas_size[0])  # canvas info
     cmb_deformation, cmb_outline, cmb_fill = None, None, None
     curTool = Tool.Rectangle
@@ -42,6 +41,7 @@ class Window:
     drawing = False
     cornerClicked = False
     selectedObj = None
+    # endregion
 
     def __init__(self):
         self.setup_canvas_window()
@@ -59,12 +59,10 @@ class Window:
             i += 1
         filename = 'newCanvas%s.json' % i
         create_json(self, filename)
-        print("save to {0}".format(filename))
 
-    @staticmethod
-    def save_canvas_ask():
+    def save_canvas_ask(self):
         filename = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("json files", "*.json")])
-        print("save to {0}".format(filename))
+        create_json(self, filename)
 
     def load_canvas(self):
         filename = filedialog.askopenfilename()
@@ -74,7 +72,6 @@ class Window:
                 item = json.loads(line)
                 self.canvas.create_polygon(*item["coords"], fill=item['fill'], outline=item['outline'])
                 self.numShapes += 1
-        print("save")
 
     # endregion
 
@@ -116,7 +113,6 @@ class Window:
     def onShiftClick(self, eventObject):
         self.drawing = True
         Tool.Rectangle.onClick(self, eventObject)
-        print("shift click")
 
     # endregion
 

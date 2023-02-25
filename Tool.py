@@ -41,7 +41,6 @@ class Rectangle(Tool):
         y3 = eventObject.y
 
         newCoords = (coords[0], coords[1], x2, y2, eventObject.x, eventObject.y, x3, y3)
-        print(newCoords)
         window.canvas.coords(window.numShapes, *newCoords)
 
     @staticmethod
@@ -50,7 +49,6 @@ class Rectangle(Tool):
         size = (coords[2] - coords[0], coords[5] - coords[1])
         window.newShapes[window.numShapes] = (coords[0], coords[1], size[0], size[1])
         window.canvas.coords(window.numShapes, *coords)
-        print(window.canvas.type(1))
 
 
 # translate moves objects up, down, left, and right
@@ -132,27 +130,49 @@ class Similarity(Tool):
 
 class Affine(Tool):
     @staticmethod
-    def onClick(canvas):
-        print("Affine onClick")
+    def onClick(window, eventObject):
+        global lastPoint
+        lastPoint = (eventObject.x, eventObject.y)
 
     @staticmethod
-    def onDrag(canvas):
-        print("Affine onDrag")
+    def onDrag(window, eventObject):
+        global lastPoint
+        if lastPoint is None or window.selectedObj is None:
+            return
+
+        coords = window.canvas.coords(window.selectedObj)  # get recorded shape position
+
+        # get new coordinates from the affine method, then update the shape with them
+        newCoords = Transformations.affine(coords)
+        window.canvas.coords(window.selectedObj, *newCoords)
+        lastPoint = (eventObject.x, eventObject.y)  # update last point to be the current point
 
     @staticmethod
-    def onRelease(canvas):
-        print("Affine onRelease")
+    def onRelease(window, eventObject):
+        global lastPoint
+        lastPoint = None
 
 
 class Projective(Tool):
     @staticmethod
-    def onClick(canvas):
-        print("Projective onClick")
+    def onClick(window, eventObject):
+        global lastPoint
+        lastPoint = (eventObject.x, eventObject.y)
 
     @staticmethod
-    def onDrag(canvas):
-        print("Projective onDrag")
+    def onDrag(window, eventObject):
+        global lastPoint
+        if lastPoint is None or window.selectedObj is None:
+            return
+
+        coords = window.canvas.coords(window.selectedObj)  # get recorded shape position
+
+        # get new coordinates from the rotate method, then update the shape with them
+        newCoords = Transformations.projective(coords)
+        window.canvas.coords(window.selectedObj, *newCoords)
+        lastPoint = (eventObject.x, eventObject.y)  # update last point to be the current point
 
     @staticmethod
-    def onRelease(canvas):
-        print("Projective onRelease")
+    def onRelease(window, eventObject):
+        global lastPoint
+        lastPoint = None
