@@ -6,6 +6,8 @@ from tkinter.ttk import Combobox, Label
 import Tool
 import json
 
+canvas_size = (700, 700)
+
 
 def create_json(window, filename):
     with open(filename, 'w') as f:
@@ -21,10 +23,11 @@ class Window:
     deformations = {'Translate': Tool.Translate, 'Rigid': Tool.Rigid, 'Similarity': Tool.Similarity,
                     'Affine': Tool.Affine, 'Projective': Tool.Projective}
 
-    # initialize tkinter root
+    global canvas_size
 
+    # initialize tkinter root
     root = tkinter.Tk()
-    canvas = Canvas(root, bg="white", height=500, width=500)  # canvas info
+    canvas = Canvas(root, bg="white", height=canvas_size[1], width=canvas_size[0])  # canvas info
     cmb_deformation, cmb_outline, cmb_fill = None, None, None
     curTool = Tool.Rectangle
     selectedDeformation = deformations['Translate']  # deformations['Create Rectangle']
@@ -74,9 +77,6 @@ class Window:
         coords = self.canvas.coords(nearest[0])
         if coords[0] < eventObject.x < coords[2] and coords[1] < eventObject.y < coords[5]:
             self.selectedObj = nearest
-
-    def donothing(self):
-        x = 0
 
     def callback_cmb_deformation(self, eventObject):
         self.selectedDeformation = self.deformations[eventObject.widget.get()]
@@ -156,8 +156,8 @@ class Window:
         fileMenu.add_command(label="Open", command=self.load_canvas)  # create 'open' option
         fileMenu.add_command(label="Save", command=self.save_canvas_default)  # create 'save' option
         fileMenu.add_command(label="Save As", command=self.save_canvas_ask)  # create 'save as' option
-        fileMenu.add_command(label="Close", command=self.donothing)  # create 'close' option
-        fileMenu.add_command(label="Quit", command=self.donothing)  # create 'quit' option
+        fileMenu.add_command(label="Close", command=exit)  # create 'close' option
+        fileMenu.add_command(label="Quit", command=exit)  # create 'quit' option
         menubar.add_cascade(label="File", menu=fileMenu)  # add the file menu to the menu bar
         self.root.config(menu=menubar)  # add menu bar to config
 
