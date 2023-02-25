@@ -1,7 +1,24 @@
 from abc import abstractmethod, ABC
 import numpy as np
 
+
 lastPoint = None
+
+
+def coordsToMatrix(coords) -> np.array:
+    # convert coordinates to a numpy array and reshape them for matrix math
+    coordArray = np.array(coords).reshape((2, 4), order='F')
+    coordArray = np.vstack([coordArray, [1, 1, 1, 1]])  # adds row of 1s for math
+    return coordArray
+
+
+def matrixToCoords(matrix) -> list:
+    # loop through the given matrix and get the new x, y coordinates as a list
+    newPoints = []
+    for i in range(4):
+        newPoints.append(matrix[0][i])
+        newPoints.append(matrix[1][i])
+    return newPoints
 
 
 class Tool(ABC):
@@ -54,7 +71,7 @@ class Rectangle(Tool):
             coords[2] = newRight
             coords[4] = newRight
             coords[6] = newLeft
-            
+
         if coords[1] > coords[5]:  # if shape was drawn down to up, fix coordinates
             newTop = coords[5]
             newBottom = coords[1]
@@ -155,16 +172,24 @@ class Projective(Tool):
 class Transformations:
 
     @staticmethod
-    def translate(coords, newLoc):
-        xDif = lastPoint[0] - newLoc[0]
-        yDif = lastPoint[1] - newLoc[1]
-        newPoints = []
-        for i in range(0, len(coords)):
-            if i % 2 == 0:
-                newPoints.append(coords[i] - xDif)
-            else:
-                newPoints.append(coords[i] - yDif)
-        return newPoints
+    def translate(coords, newLoc) -> list:
+        # get x and y change in location
+        xDif = newLoc[0] - lastPoint[0]
+        yDif = newLoc[1] - lastPoint[1]
+
+        # convert coordinates to a numpy array and reshape them for matrix math
+        coordArray = coordsToMatrix(coords)
+
+        # Translation matrix
+        M = np.array([[1, 0, xDif], [0, 1, yDif], [0, 0, 1]])
+        translated = M @ coordArray  # @ does matrix multiplication
+
+        # get the new x, y coordinates as a list
+        return matrixToCoords(translated)
+
+    @staticmethod
+    def rotate(coords, newLoc):
+        print('rotate')
 
 
 identityMatrix = [[1, 0], [0, 1]]

@@ -68,8 +68,10 @@ class Window:
         print("save")
 
     def get_selected_object(self, eventObject):
-        nearest = self.canvas.find_closest(eventObject.x, eventObject.y)[0]
-        coords = self.canvas.coords(nearest)
+        nearest = self.canvas.find_closest(eventObject.x, eventObject.y)
+        if len(nearest) == 0:
+            return
+        coords = self.canvas.coords(nearest[0])
         if coords[0] < eventObject.x < coords[2] and coords[1] < eventObject.y < coords[5]:
             self.selectedObj = nearest
 
@@ -114,6 +116,9 @@ class Window:
 
     def check_if_corner(self, eventObject):
         shape = self.canvas.find_closest(eventObject.x, eventObject.y)
+        if len(shape) == 0:
+            return
+
         coords = self.canvas.coords(shape[0])
         dist = 4
 
