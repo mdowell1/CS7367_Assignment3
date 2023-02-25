@@ -1,23 +1,7 @@
 from abc import abstractmethod, ABC
-import numpy as np
+import Transformations
 
 lastPoint = None
-
-
-def coordsToMatrix(coords) -> np.array:
-    # convert coordinates to a numpy array and reshape them for matrix math
-    coordArray = np.array(coords).reshape((2, 4), order='F')
-    coordArray = np.vstack([coordArray, [1, 1, 1, 1]])  # adds row of 1s for math
-    return coordArray
-
-
-def matrixToCoords(matrix) -> list:
-    # loop through the given matrix and get the new x, y coordinates as a list
-    newPoints = []
-    for i in range(4):
-        newPoints.append(matrix[0][i])
-        newPoints.append(matrix[1][i])
-    return newPoints
 
 
 class Tool(ABC):
@@ -101,7 +85,7 @@ class Translate(Tool):
         coords = window.canvas.coords(window.selectedObj)  # get recorded shape position
 
         # get new coordinates from the translate method, then update the shape with them
-        newCoords = Transformations.translate(coords, (eventObject.x, eventObject.y))
+        newCoords = Transformations.translate(coords, lastPoint, (eventObject.x, eventObject.y))
         window.canvas.coords(window.selectedObj, *newCoords)
         lastPoint = (eventObject.x, eventObject.y)  # update last point to be the current point
 
@@ -117,7 +101,6 @@ class Rigid(Tool):
     def onClick(window, eventObject):
         global lastPoint
         lastPoint = (eventObject.x, eventObject.y)
-        print("Rigid onClick")
 
     @staticmethod
     def onDrag(window, eventObject):
@@ -127,21 +110,15 @@ class Rigid(Tool):
 
         coords = window.canvas.coords(window.selectedObj)  # get recorded shape position
 
-        # get new coordinates from the rotate method
-        rotateCoords = Transformations.rotate(coords, (eventObject.x, eventObject.y))
-
-        # get new coordinates from the translate method, then update the shape with them
-        newCoords = Transformations.translate(rotateCoords, (eventObject.x, eventObject.y))
+        # get new coordinates from the rotate method, then update the shape with them
+        newCoords = Transformations.rotate(coords, lastPoint, (eventObject.x, eventObject.y))
         window.canvas.coords(window.selectedObj, *newCoords)
         lastPoint = (eventObject.x, eventObject.y)  # update last point to be the current point
-
-        print("Rigid onDrag")
 
     @staticmethod
     def onRelease(window, eventObject):
         global lastPoint
         lastPoint = None
-        print("Rigid onRelease")
 
 
 class Similarity(Tool):
@@ -184,47 +161,3 @@ class Projective(Tool):
     @staticmethod
     def onRelease(canvas):
         print("Projective onRelease")
-
-
-class Transformations:
-
-    @staticmethod
-    def translate(coords, newLoc) -> list:
-        # get x and y change in location
-        xDif = newLoc[0] - lastPoint[0]
-        yDif = newLoc[1] - lastPoint[1]
-
-        # convert coordinates to a numpy array and reshape them for matrix math
-        coordArray = coordsToMatrix(coords)
-
-        # Translation matrix
-        M = np.array([[1, 0, xDif], [0, 1, yDif], [0, 0, 1]])
-        translated = M @ coordArray  # @ does matrix multiplication
-
-        # get the new x, y coordinates as a list
-        return matrixToCoords(translated)
-
-    @staticmethod
-    def rotate(coords, newLoc):
-        # get x and y change in location
-        xDif = newLoc[0] - lastPoint[0]
-        yDif = newLoc[1] - lastPoint[1]
-
-        if xDif < 0 or yDif < 0:
-            angle = -180
-        elif xDif > 0 or yDif > 0:
-            angle = 180
-        else:
-            return coords
-
-        # convert coordinates to a numpy array and reshape them for matrix math
-        coordArray = coordsToMatrix(coords)
-
-        # Rotation matrix
-        M = np.array([[np.cos(angle), -np.sin(angle), 0], [np.sin(angle), np.cos(angle), 0], [0, 0, 1]])
-        translated = M @ coordArray  # @ does matrix multiplication
-        # get the new x, y coordinates as a list
-        return matrixToCoords(translated)
-
-
-identityMatrix = [[1, 0], [0, 1]]
