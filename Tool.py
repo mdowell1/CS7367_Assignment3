@@ -47,22 +47,6 @@ class Rectangle(Tool):
     @staticmethod
     def onRelease(window, eventObject):
         coords = window.canvas.coords(window.numShapes)
-        if coords[0] > coords[2]:  # if shape was drawn left to right, fix coordinates
-            newRight = coords[0]
-            newLeft = coords[2]
-            coords[0] = newLeft
-            coords[2] = newRight
-            coords[4] = newRight
-            coords[6] = newLeft
-
-        if coords[1] > coords[5]:  # if shape was drawn down to up, fix coordinates
-            newTop = coords[5]
-            newBottom = coords[1]
-            coords[1] = newTop
-            coords[3] = newTop
-            coords[5] = newBottom
-            coords[7] = newBottom
-
         size = (coords[2] - coords[0], coords[5] - coords[1])
         window.newShapes[window.numShapes] = (coords[0], coords[1], size[0], size[1])
         window.canvas.coords(window.numShapes, *coords)
@@ -111,7 +95,7 @@ class Rigid(Tool):
         coords = window.canvas.coords(window.selectedObj)  # get recorded shape position
 
         # get new coordinates from the rotate method, then update the shape with them
-        newCoords = Transformations.rotate(coords, lastPoint, (eventObject.x, eventObject.y))
+        newCoords = Transformations.rigid(coords, lastPoint, (eventObject.x, eventObject.y))
         window.canvas.coords(window.selectedObj, *newCoords)
         lastPoint = (eventObject.x, eventObject.y)  # update last point to be the current point
 
@@ -123,16 +107,27 @@ class Rigid(Tool):
 
 class Similarity(Tool):
     @staticmethod
-    def onClick(canvas):
-        print("Similarity onClick")
+    def onClick(window, eventObject):
+        global lastPoint
+        lastPoint = (eventObject.x, eventObject.y)
 
     @staticmethod
-    def onDrag(canvas):
-        print("Similarity onDrag")
+    def onDrag(window, eventObject):
+        global lastPoint
+        if lastPoint is None or window.selectedObj is None:
+            return
+
+        coords = window.canvas.coords(window.selectedObj)  # get recorded shape position
+
+        # get new coordinates from the rotate method, then update the shape with them
+        newCoords = Transformations.similarity(coords, lastPoint, (eventObject.x, eventObject.y))
+        window.canvas.coords(window.selectedObj, *newCoords)
+        lastPoint = (eventObject.x, eventObject.y)  # update last point to be the current point
 
     @staticmethod
-    def onRelease(canvas):
-        print("Similarity onRelease")
+    def onRelease(window, eventObject):
+        global lastPoint
+        lastPoint = None
 
 
 class Affine(Tool):

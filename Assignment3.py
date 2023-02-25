@@ -6,7 +6,11 @@ from tkinter.ttk import Combobox, Label
 import Tool
 import json
 
+import Transformations
+
 canvas_size = (700, 700)
+Transformations.xHalf = canvas_size[0]/2
+Transformations.yHalf = canvas_size[1]/2
 
 
 def create_json(window, filename):
@@ -44,6 +48,7 @@ class Window:
         self.create_bindings()
         self.clear_canvas()
 
+    # region save and load
     def clear_canvas(self):
         self.canvas.delete('all')
         self.root.mainloop()
@@ -56,7 +61,8 @@ class Window:
         create_json(self, filename)
         print("save to {0}".format(filename))
 
-    def save_canvas_ask(self):
+    @staticmethod
+    def save_canvas_ask():
         filename = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("json files", "*.json")])
         print("save to {0}".format(filename))
 
@@ -70,14 +76,9 @@ class Window:
                 self.numShapes += 1
         print("save")
 
-    def get_selected_object(self, eventObject):
-        nearest = self.canvas.find_closest(eventObject.x, eventObject.y)
-        if len(nearest) == 0:
-            return
-        coords = self.canvas.coords(nearest[0])
-        if coords[0] < eventObject.x < coords[2] and coords[1] < eventObject.y < coords[5]:
-            self.selectedObj = nearest
+    # endregion
 
+    # region combobox events
     def callback_cmb_deformation(self, eventObject):
         self.selectedDeformation = self.deformations[eventObject.widget.get()]
 
@@ -89,6 +90,9 @@ class Window:
         self.selectedFill = eventObject.widget.get()
         print(self.selectedFill)
 
+    # endregion
+
+    # region mouse and key events
     def onClick(self, eventObject):
         self.get_selected_object(eventObject)
         self.check_if_corner(eventObject)
@@ -113,6 +117,8 @@ class Window:
         self.drawing = True
         Tool.Rectangle.onClick(self, eventObject)
         print("shift click")
+
+    # endregion
 
     def check_if_corner(self, eventObject):
         shape = self.canvas.find_closest(eventObject.x, eventObject.y)
@@ -146,6 +152,20 @@ class Window:
             self.cornerClicked = True
             print("Clicked bottom right corner")
 
+    def get_selected_object(self, eventObject):
+        nearest = self.canvas.find_closest(eventObject.x, eventObject.y)
+        if len(nearest) == 0:
+            return
+        coords = self.canvas.coords(nearest[0])
+        xMin = min(coords[0], coords[2], coords[4], coords[6])
+        xMax = max(coords[0], coords[2], coords[4], coords[6])
+        yMin = min(coords[1], coords[3], coords[5], coords[7])
+        yMax = max(coords[1], coords[3], coords[5], coords[7])
+
+        if xMin < eventObject.x < xMax and yMin < eventObject.y < yMax:
+            self.selectedObj = nearest
+
+    # region setup
     def setup_canvas_window(self):
         # create main menu bar for window
         menubar = Menu(self.root)
@@ -201,6 +221,8 @@ class Window:
         self.canvas.bind("<Shift-1>", self.onShiftClick)
         self.canvas.bind("<KeyRelease-Shift_L>", self.onShiftClick)
         self.canvas.bind("<KeyRelease-Shift_R>", self.onShiftClick)
+
+    # endregion
 
 
 w = Window()
