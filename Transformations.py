@@ -106,6 +106,25 @@ def matrixToCoords(matrix) -> list:
 
 
 # region transformations
+def translateSingle(coords, lastPoint, newLoc, selectedCorner):
+    # get x and y change in location
+    xDif = newLoc[0] - lastPoint[0]
+    yDif = newLoc[1] - lastPoint[1]
+
+    # convert coordinates to a numpy array and reshape them for matrix math
+    x = selectedCorner * 2  # get the x coordinate that is changing
+    coordArray = np.array([[coords[x]], [coords[x+1]], [1]])
+
+    # Translation matrix
+    M = translateMatrix(xDif, yDif)
+    translated = M @ coordArray  # @ does matrix multiplication
+
+    coords[x] = translated[0][0]
+    coords[x + 1] = translated[1][0]
+
+    # get the new x, y coordinates as a list and return
+    return coords
+
 
 # returns new coordinates after translation
 def translate(coords, lastPoint, newLoc):
