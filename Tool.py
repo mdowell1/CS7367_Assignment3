@@ -1,9 +1,11 @@
 from abc import abstractmethod, ABC
+
 import Transformations
 
-lastPoint = None
+lastPoint = None  # to help transformations be smooth
 
 
+# abstract class - needed for easy calling of methods from Window class
 class Tool(ABC):
     @staticmethod
     @abstractmethod
@@ -21,45 +23,47 @@ class Tool(ABC):
         print("default")
 
 
+# class for creating rectangles
 class Rectangle(Tool):
-    color_outline = 'Black'
-    color_fill = 'Black'
-
     @staticmethod
     def onClick(window, eventObject):
-        rect = window.canvas.create_polygon(eventObject.x, eventObject.y, eventObject.x,
-                                            eventObject.y, fill=window.selectedFill, outline=window.selectedOutline)
-        window.newShapes[rect] = (eventObject.x, eventObject.y, 0, 0)
-        window.numShapes += 1
+        # create a new rectangle on the canvas at the clicked point using the selected colors
+        window.canvas.create_polygon(eventObject.x, eventObject.y, eventObject.x,
+                                     eventObject.y, fill=window.selectedFill, outline=window.selectedOutline)
+        window.numShapes += 1  # increase number of shapes
 
     @staticmethod
     def onDrag(window, eventObject):
-        coords = window.newShapes[window.numShapes]
-        x2 = eventObject.x
-        y2 = coords[1]
-        x3 = coords[0]
-        y3 = eventObject.y
+        # get the coordinates of the new shape
+        coords = window.canvas.coords(window.numShapes)
 
-        newCoords = (coords[0], coords[1], x2, y2, eventObject.x, eventObject.y, x3, y3)
-        window.canvas.coords(window.numShapes, *newCoords)
+        # update coordinates based on mouse location
+        rightX = eventObject.x
+        leftX = coords[0]
+        topY = coords[1]
+        bottomY = eventObject.y
+
+        # combine the new coordinates for the rectangle
+        newCoords = (leftX, topY, rightX, topY, rightX, bottomY, leftX, bottomY)
+        window.canvas.coords(window.numShapes, *newCoords)  # set the new coordinates for this shape
 
     @staticmethod
     def onRelease(window, eventObject):
-        coords = window.canvas.coords(window.numShapes)
-        size = (coords[2] - coords[0], coords[5] - coords[1])
-        window.newShapes[window.numShapes] = (coords[0], coords[1], size[0], size[1])
-        window.canvas.coords(window.numShapes, *coords)
+        pass
 
 
-# translate moves objects up, down, left, and right
+# translate moves objects up, down, left, and right - follows mouse
+# 2 degrees of freedom - preserves orientation
 class Translate(Tool):
     @staticmethod
     def onClick(window, eventObject):
+        # when clicked, get the point and record it for later
         global lastPoint
         lastPoint = (eventObject.x, eventObject.y)
 
     @staticmethod
     def onDrag(window, eventObject):
+        # if for some reason onClick didn't fire or no object is selected, return
         global lastPoint
         if lastPoint is None or window.selectedObj is None:
             return
@@ -73,11 +77,13 @@ class Translate(Tool):
 
     @staticmethod
     def onRelease(window, eventObject):
+        # reset the last point
         global lastPoint
         lastPoint = None
 
 
-# rigid both translates and rotates objects
+# rigid both rotates and translates objects
+# 3 degrees of freedom - preserves lengths
 class Rigid(Tool):
     @staticmethod
     def onClick(window, eventObject):
@@ -92,7 +98,7 @@ class Rigid(Tool):
 
         coords = window.canvas.coords(window.selectedObj)  # get recorded shape position
 
-        # get new coordinates from the rotate method, then update the shape with them
+        # get new coordinates from the rigid method, then update the shape with them
         newCoords = Transformations.rigid(coords, lastPoint, (eventObject.x, eventObject.y))
         window.canvas.coords(window.selectedObj, *newCoords)
         lastPoint = (eventObject.x, eventObject.y)  # update last point to be the current point
@@ -103,6 +109,8 @@ class Rigid(Tool):
         lastPoint = None
 
 
+# similarity scales, rotates, and translates objects
+# 4 degrees of freedom - preserves angles
 class Similarity(Tool):
     @staticmethod
     def onClick(window, eventObject):
@@ -117,7 +125,7 @@ class Similarity(Tool):
 
         coords = window.canvas.coords(window.selectedObj)  # get recorded shape position
 
-        # get new coordinates from the rotate method, then update the shape with them
+        # get new coordinates from the similarity method, then update the shape with them
         newCoords = Transformations.similarity(coords, lastPoint, (eventObject.x, eventObject.y))
         window.canvas.coords(window.selectedObj, *newCoords)
         lastPoint = (eventObject.x, eventObject.y)  # update last point to be the current point
@@ -128,6 +136,8 @@ class Similarity(Tool):
         lastPoint = None
 
 
+# affine can scale, rotate, and translate freely as long as lines remain parallel
+# 6 degrees of freedom - preserves parallelism
 class Affine(Tool):
     @staticmethod
     def onClick(window, eventObject):
@@ -153,6 +163,8 @@ class Affine(Tool):
         lastPoint = None
 
 
+# projective/perspective can do any operation as long as the lines remain straight
+# 8 degrees of freedom - preserves straight lines
 class Projective(Tool):
     @staticmethod
     def onClick(window, eventObject):
@@ -167,7 +179,7 @@ class Projective(Tool):
 
         coords = window.canvas.coords(window.selectedObj)  # get recorded shape position
 
-        # get new coordinates from the rotate method, then update the shape with them
+        # get new coordinates from the projective method, then update the shape with them
         newCoords = Transformations.projective(coords)
         window.canvas.coords(window.selectedObj, *newCoords)
         lastPoint = (eventObject.x, eventObject.y)  # update last point to be the current point
