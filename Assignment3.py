@@ -36,6 +36,8 @@ class Window:
     selectedDeformation = deformations['Translate']  # start with translate tool selected
     selectedFill = 'Black'  # set default colors
     selectedOutline = 'Black'
+    cornerClicked = False
+    selectedCorner = None
     numShapes = 0  # record number of shapes (really records last used index)
     drawing = False  # not currently drawing
     selectedObj = None  # no object selected yet
@@ -97,20 +99,31 @@ class Window:
     # region mouse and key events
     def onClick(self, eventObject):  # when user clicks
         self.get_selected_object(eventObject)  # get clicked object
-        self.selectedDeformation.onClick(self, eventObject)  # call onClick for the selected transformation
+        self.check_if_corner(eventObject)  # check if a corner was clicked
+        if self.cornerClicked:
+            Tool.Translate.onClick(self, eventObject)
+        else:
+            self.selectedDeformation.onClick(self, eventObject)  # call onClick for the selected transformation
 
     def onDrag(self, eventObject):  # when user drags mouse
         if self.drawing:  # if currently drawing, call rectangle ondrag
             Tool.Rectangle.onDrag(self, eventObject)
+        elif self.cornerClicked:
+            Tool.Translate.onDrag(self, eventObject)
         else:  # if not currently drawing, call onDrag for the selected transformation
             self.selectedDeformation.onDrag(self, eventObject)
 
     def onRelease(self, eventObject):
-        self.selectedObj = None  # reset the selected object
-        # if we were drawing, set it to false
-        if self.drawing:
-            self.drawing = False
-        else:  # otherwise call onRelease for the selected transformation
+        self.selectedObj = None  # reset selections
+        self.selectedCorner = None
+        self.drawing = False
+
+        if self.cornerClicked:  # if we were moving a corner, call onRelease for the translate tool
+            self.cornerClicked = False
+            Tool.Translate.onRelease(self, eventObject)
+
+        # if we were not drawing call onRelease for the selected transformation
+        elif not self.drawing:
             self.selectedDeformation.onRelease(self, eventObject)
 
     def onShiftClick(self, eventObject):  # when user presses shift
@@ -138,6 +151,42 @@ class Window:
         # if user clicked in the shape's range, set the selected object to this one
         if xMin < eventObject.x < xMax and yMin < eventObject.y < yMax:
             self.selectedObj = nearest
+
+    def check_if_corner(self, eventObject):
+        shape = self.canvas.find_closest(eventObject.x, eventObject.y)
+        if len(shape) == 0:
+            return
+
+        coords = self.canvas.coords(shape[0])
+        dist = 4
+
+        # check if on top left corner
+        if coords[1] - dist <= eventObject.y <= coords[1] + dist and coords[0] - dist <= eventObject.x <= coords[
+            0] + dist:
+            self.cornerClicked = True
+            self.selectedCorner = 0
+            print("Clicked top left corner")
+
+        # check if bottom left corner
+        if coords[7] - dist <= eventObject.y <= coords[7] + dist and coords[6] - dist <= eventObject.x <= coords[
+            6] + dist:
+            self.cornerClicked = True
+            self.selectedCorner = 3
+            print("Clicked bottom left corner")
+
+        # check if on top right corner
+        if coords[3] - dist <= eventObject.y <= coords[3] + dist and coords[2] - dist <= eventObject.x <= coords[
+            2] + dist:
+            self.cornerClicked = True
+            self.selectedCorner = 1
+            print("Clicked top right corner")
+
+        # check if bottom right corner
+        if coords[5] - dist <= eventObject.y <= coords[5] + dist and coords[4] - dist <= eventObject.x <= coords[
+            4] + dist:
+            self.cornerClicked = True
+            self.selectedCorner = 2
+            print("Clicked bottom right corner")
 
     # region setup
     def setup_canvas_window(self):
